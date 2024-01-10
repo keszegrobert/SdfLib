@@ -1,0 +1,13 @@
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(eigen)
+find_dependency(fcpw)
+find_dependency(spdlog)
+find_dependency(cereal)
+find_dependency(imgui)
+find_dependency(imguizmo)
+
+include ("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")

@@ -54,12 +54,20 @@ file(GLOB SDF_HEADER_FILES src/sdf/*.h)
 file(GLOB UTILS_SOURCE_FILES src/utils/*.cpp)
 file(GLOB UTILS_HEADER_FILES src/utils/*.h)
 
+file(GLOB ICG_SOURCE_FILES src/libs/*.cpp)
+file(GLOB ICG_HEADER_FILES src/libs/*.h)
+
 # Add libraries
 add_library(${PROJECT_NAME} STATIC  ${SOURCE_FILES} ${HEADER_FILES} ${PUBLIC_HEADER_FILES}
                                     ${SDF_SOURCE_FILES} ${SDF_HEADER_FILES}
+                                    ${ICG_SOURCE_FILES} ${ICG_HEADER_FILES}
                                     ${UTILS_SOURCE_FILES} ${UTILS_HEADER_FILES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC include/)
+target_include_directories(${PROJECT_NAME}
+                           PUBLIC
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                           "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include>"
+)
 target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 # Add shaders
@@ -94,25 +102,25 @@ endif()
 add_subdirectory(libs)
 
 if(SDFLIB_USE_ENOKI)
-    target_link_libraries(${PROJECT_NAME} PUBLIC enoki)
-    target_link_libraries(${PROJECT_NAME} PUBLIC eigen) # FCPW requirement
-    target_link_libraries(${PROJECT_NAME} PUBLIC fcpw)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:enoki>)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:eigen>) # FCPW requirement
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:fcpw>)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DENOKI_AVAILABLE)
 endif()
 
 if(SDFLIB_USE_ASSIMP)
-    target_link_libraries(${PROJECT_NAME} PUBLIC assimp::assimp)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:assimp::assimp>)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DSDFLIB_ASSIMP_AVAILABLE)
 endif()
 
 if(SDFLIB_BUILD_APPS OR SDFLIB_BUILD_DEBUG_APPS)
-    target_link_libraries(${PROJECT_NAME} PUBLIC args)
-    target_link_libraries(${PROJECT_NAME} PUBLIC stb_image)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:args>)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:stb_image>)
 endif()
     
 target_link_libraries(${PROJECT_NAME} PUBLIC ${SDFLIB_GLM_TARGET})
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
-target_link_libraries(${PROJECT_NAME} PUBLIC cereal::cereal)
+target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:spdlog::spdlog>)
+target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:cereal::cereal>)
 target_link_libraries(${PROJECT_NAME} PUBLIC icg)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -235,4 +243,57 @@ if(SDFLIB_BUILD_DEBUG_APPS)
     add_executable(ImageQueryTime src/tools/ImageQueryTime/main.cpp)
     # target_link_libraries(ImageQueryTime PUBLIC ${PROJECT_NAME} CGAL::CGAL OpenVDB::openvdb)
     target_link_libraries(ImageQueryTime PUBLIC ${PROJECT_NAME})
+endif()
+
+set(PACKAGE_NAME "sdflib")
+set(CONFIG_INPUT CMake/${PACKAGE_NAME}Config.cmake.in)
+set(CONFIG_FILE ${PACKAGE_NAME}Config.cmake)
+set(VERSION_FILE ${PACKAGE_NAME}ConfigVersion.cmake)
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    ${CONFIG_INPUT}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CONFIG_FILE}
+    INSTALL_DESTINATION cmake/
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/${VERSION_FILE}
+    VERSION PACKAGE_VERSION
+    COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CONFIG_FILE}
+    ${CMAKE_CURRENT_BINARY_DIR}/${VERSION_FILE}
+    DESTINATION cmake/
+)
+
+install(
+    DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
+)
+
+
+install(TARGETS ${PROJECT_NAME}
+        EXPORT ${PACKAGE_NAME}Targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT ${PACKAGE_NAME}Targets
+        FILE ${PACKAGE_NAME}Targets.cmake
+        NAMESPACE sdflib::
+        DESTINATION cmake/
+)
+
+if(SDFLIB_BUILD_APPS OR SDFLIB_BUILD_DEBUG_APPS)
+    install(TARGETS stb_image EXPORT stbExport
+    FILE_SET HEADERS DESTINATION include)
+    install(EXPORT stbExport NAMESPACE stb::
+    DESTINATION cmake/
+    )
 endif()
