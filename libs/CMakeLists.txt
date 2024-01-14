@@ -146,7 +146,7 @@ target_include_directories(icg INTERFACE
 install(TARGETS icg EXPORT icgExport
   FILE_SET HEADERS DESTINATION include)
 install(EXPORT icgExport NAMESPACE icg::
-  DESTINATION cmake/
+  DESTINATION lib/cmake/icg
 )
 
 

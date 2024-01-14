@@ -255,7 +255,7 @@ include(CMakePackageConfigHelpers)
 configure_package_config_file(
     ${CONFIG_INPUT}
     ${CMAKE_CURRENT_BINARY_DIR}/${CONFIG_FILE}
-    INSTALL_DESTINATION cmake/
+    INSTALL_DESTINATION lib/cmake/
 )
 
 write_basic_package_version_file(
@@ -266,7 +266,7 @@ write_basic_package_version_file(
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CONFIG_FILE}
     ${CMAKE_CURRENT_BINARY_DIR}/${VERSION_FILE}
-    DESTINATION cmake/
+    DESTINATION lib/cmake/
 )
 
 install(
@@ -287,13 +287,13 @@ install(TARGETS ${PROJECT_NAME}
 install(EXPORT ${PACKAGE_NAME}Targets
         FILE ${PACKAGE_NAME}Targets.cmake
         NAMESPACE sdflib::
-        DESTINATION cmake/
+        DESTINATION lib/cmake/
 )
 
 if(SDFLIB_BUILD_APPS OR SDFLIB_BUILD_DEBUG_APPS)
     install(TARGETS stb_image EXPORT stbExport
     FILE_SET HEADERS DESTINATION include)
     install(EXPORT stbExport NAMESPACE stb::
-    DESTINATION cmake/
+    DESTINATION lib/cmake/
     )
 endif()
